@@ -2,9 +2,10 @@ import tensorflow as tf
 from tensorflow.keras import layers
 
 moves = ['p','c','f']
-learning_rate = .001
+learning_rate = .01
 timestep = 16
-batchsize = 8
+batchsize = 16
+recurrent = True
 # Instantiate an optimizer.
 optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
 def loss(y_truth,y_pred):
@@ -25,10 +26,12 @@ def int2vec(x):
 
 ####CREATE MODEL###
 model = tf.keras.Sequential()
-model.add(tf.keras.Input(shape=(timestep,6,)))
-model.add(layers.GRU(16))
-#model.add(tf.keras.Input(shape=(timestep*2,)))
-#model.add(layers.Dense(8,activation='tanh'))
+if recurrent:
+    model.add(tf.keras.Input(shape=(timestep,6,)))
+    model.add(layers.GRU(16))
+else:
+    model.add(tf.keras.Input(shape=(timestep*6,)))
+    model.add(layers.Dense(16,activation='tanh'))
 model.add(layers.Dense(3,activation = 'softmax'))
 
 model.summary()    
@@ -59,11 +62,15 @@ if __name__ == '__main__':
             
         ylast_desired = int2vec((ylast-1)%3)
         y = tf.concat((y[1:],[ylast_desired]),0)
-        y_pred = model(x)
+        if recurrent:
+            xr = x
+        else:
+            xr = tf.reshape(x,(x.shape[0],x.shape[1]*x.shape[2]))
+        y_pred = model(xr)
 
         accuracy += tf.cast(tf.argmax(y[-1])==tf.argmax(y_pred[-1]),tf.float32)
         
-        current_loss = train(model, x, y, learning_rate)
+        current_loss = train(model, xr, y, learning_rate)
         
         xlast = tf.concat((x[-1,1:],[tf.concat((y_pred[-1],y[-1]),0)]),0)
         x = tf.concat((x[1:],[xlast]),0)

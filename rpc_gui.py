@@ -32,13 +32,18 @@ class Interface(Frame):
         self.bouton_ciseaux.grid(row=3, column=2,columnspan=1)
         
         self.moves = ['p','c','f']
-        self.learning_rate = .001
-        self.timestep = 32
-        self.batchsize = 32
+        self.learning_rate = rpcm.learning_rate
+        self.timestep = rpcm.timestep
+        self.batchsize = rpcm.batchsize
         self.x = tf.zeros((self.batchsize,self.timestep,6))
         self.y=tf.zeros((self.batchsize,3))
         self.y_pred=tf.zeros((self.batchsize,3))
         
+        self.bkg = Image.open(paths[3])
+        render = ImageTk.PhotoImage(self.bkg)
+        img = Label(self, image=render)
+        img.image = render
+        img.grid(row=0, column=0)
     def display(self,ylast,y_pred):
         self.bkg = Image.open(paths[3])
 
@@ -48,7 +53,7 @@ class Interface(Frame):
 
         load = Image.open(paths[ylast])
         load = load.resize((100, 100))
-        self.bkg.paste(load,(300,160))
+        self.bkg.paste(load,(350,160))
 
         render = ImageTk.PhotoImage(self.bkg)
         img = Label(self, image=render)
@@ -58,11 +63,15 @@ class Interface(Frame):
     def play_move(self,ylast):
         ylast_desired = rpcm.int2vec((ylast-1)%3)
         self.y = tf.concat((self.y[1:],[ylast_desired]),0)
-        self.y_pred = rpcm.model(self.x)
+        if rpcm.recurrent:
+            xr = self.x
+        else:
+            xr = tf.reshape(self.x,(self.x.shape[0],self.x.shape[1]*self.x.shape[2]))
+        self.y_pred = rpcm.model(xr)
         
         self.display(ylast,tf.argmax(self.y_pred[-1]))
         
-        current_loss = rpcm.train(rpcm.model, self.x, self.y, self.learning_rate)
+        current_loss = rpcm.train(rpcm.model, xr, self.y, self.learning_rate)
         
         xlast = tf.concat((self.x[-1,1:],[tf.concat((self.y_pred[-1],self.y[-1]),0)]),0)
         self.x = tf.concat((self.x[1:],[xlast]),0)
