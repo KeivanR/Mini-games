@@ -38,6 +38,7 @@ class Interface(Frame):
         self.x = tf.zeros((self.batchsize,self.timestep,6))
         self.y=tf.zeros((self.batchsize,3))
         self.y_pred=tf.zeros((self.batchsize,3))
+        self.score = [0,0]
         
         self.bkg = Image.open(paths[3])
         render = ImageTk.PhotoImage(self.bkg)
@@ -80,8 +81,11 @@ class Interface(Frame):
         
         print('ypred' ,self.y_pred[-1])
         print('LOSS: ',current_loss)
-
-
+        
+        last_score = rpcm.score(ylast,tf.argmax(self.y_pred[-1]))
+        self.score[0] += last_score[0]
+        self.score[1] += last_score[1]
+        self.winfo_toplevel().title("Computer "+str(self.score[1])+" - "+str(self.score[0])+" User")
 		
 
 window = Tk()

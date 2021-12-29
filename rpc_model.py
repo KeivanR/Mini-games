@@ -43,6 +43,15 @@ def auto_move(method,ylast=None,y_pred=None):
         return (ylast+1)%3
     if method=='kill_last':
         return tf.cast((tf.argmax(y_pred[-1])-1)%3,tf.int32)
+        
+def score(ylast,y_pred):
+    if ylast==y_pred:
+        return [.5,.5]
+    if ylast==(y_pred-1)%3:
+        return [1,0]
+    if ylast==(y_pred+1)%3:
+        return [0,1]
+    return None
 
 auto = True
 x = tf.zeros((batchsize,timestep,6))
