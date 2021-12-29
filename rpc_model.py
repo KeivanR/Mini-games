@@ -3,8 +3,8 @@ from tensorflow.keras import layers
 
 moves = ['p','c','f']
 learning_rate = .001
-timestep = 32
-batchsize = 32
+timestep = 16
+batchsize = 8
 # Instantiate an optimizer.
 optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
 def loss(y_truth,y_pred):
@@ -49,33 +49,34 @@ ylast = 0
 number_of_moves = 10000
 accuracy = 0
 pause_size = 100
-for move in range(number_of_moves):
-    if auto:
-        ylast = auto_move(method='kill_last',ylast=ylast,y_pred=y_pred)
-    else:
-        ylast = input('Chi-Fou-Mi!')
-        ylast = tf.cast(tf.where(tf.equal(moves,ylast))[0,0],tf.int32)
-        
-    ylast_desired = int2vec((ylast-1)%3)
-    y = tf.concat((y[1:],[ylast_desired]),0)
-    y_pred = model(x)
+if __name__ == '__main__':
+    for move in range(number_of_moves):
+        if auto:
+            ylast = auto_move(method='kill_last',ylast=ylast,y_pred=y_pred)
+        else:
+            ylast = input('Chi-Fou-Mi!')
+            ylast = tf.cast(tf.where(tf.equal(moves,ylast))[0,0],tf.int32)
+            
+        ylast_desired = int2vec((ylast-1)%3)
+        y = tf.concat((y[1:],[ylast_desired]),0)
+        y_pred = model(x)
 
-    accuracy += tf.cast(tf.argmax(y[-1])==tf.argmax(y_pred[-1]),tf.float32)
-    
-    current_loss = train(model, x, y, learning_rate)
-    
-    xlast = tf.concat((x[-1,1:],[tf.concat((y_pred[-1],y[-1]),0)]),0)
-    x = tf.concat((x[1:],[xlast]),0)
-    if move%pause_size==0:
-        print(int(100*accuracy/pause_size),'% of computer wins')
-    if move%pause_size==0 or not auto:
-        print('User ' ,moves[ylast])
-        print('Computer: ',moves[tf.argmax(y_pred[-1])])
+        accuracy += tf.cast(tf.argmax(y[-1])==tf.argmax(y_pred[-1]),tf.float32)
         
-        print('ypred' ,y_pred[-1])
-        print('LOSS: ',current_loss)
-        if 100*(accuracy/pause_size)>90:
-            ans = input('If you want manual, press m\n') 
-            auto = ans!='m'
-        accuracy = 0
+        current_loss = train(model, x, y, learning_rate)
+        
+        xlast = tf.concat((x[-1,1:],[tf.concat((y_pred[-1],y[-1]),0)]),0)
+        x = tf.concat((x[1:],[xlast]),0)
+        if move%pause_size==0:
+            print(int(100*accuracy/pause_size),'% of computer wins')
+        if move%pause_size==0 or not auto:
+            print('User ' ,moves[ylast])
+            print('Computer: ',moves[tf.argmax(y_pred[-1])])
+            
+            print('ypred' ,y_pred[-1])
+            print('LOSS: ',current_loss)
+            if 100*(accuracy/pause_size)>90:
+                ans = input('If you want manual, press m\n') 
+                auto = ans!='m'
+            accuracy = 0
 
