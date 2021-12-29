@@ -11,6 +11,7 @@ windows_path+'ciseaux.jpg',
 windows_path+'feuille.jpg',
 windows_path+'table.png'
 ]
+model_path = windows_path+'model'
 
 class Interface(Frame):
     def __init__(self, fenetre,**kwargs):
@@ -30,6 +31,10 @@ class Interface(Frame):
         self.bouton_feuille.grid(row=2, column=2,columnspan=1)
         self.bouton_ciseaux = Button(self, text="Ciseaux", fg="Orange",command=lambda: self.play_move(1))
         self.bouton_ciseaux.grid(row=3, column=2,columnspan=1)
+        self.bouton_load = Button(self, text="Load Model", fg="Black",command=lambda: self.load(model_path))
+        self.bouton_load.grid(row=4, column=2,columnspan=1)
+        self.bouton_save = Button(self, text="Save Model", fg="Black",command=lambda: self.save(model_path))
+        self.bouton_save.grid(row=5, column=2,columnspan=1)
         
         self.moves = ['p','c','f']
         self.learning_rate = rpcm.learning_rate
@@ -39,6 +44,7 @@ class Interface(Frame):
         self.y=tf.zeros((self.batchsize,3))
         self.y_pred=tf.zeros((self.batchsize,3))
         self.score = [0,0]
+        self.model = rpcm.model
         
         self.bkg = Image.open(paths[3])
         render = ImageTk.PhotoImage(self.bkg)
@@ -60,7 +66,10 @@ class Interface(Frame):
         img = Label(self, image=render)
         img.image = render
         img.grid(row=0, column=0)
-
+    def load(self,model_path):
+        self.model.load_weights(model_path)
+    def save(self,model_path):
+        self.model.save_weights(model_path)
     def play_move(self,ylast):
         ylast_desired = rpcm.int2vec((ylast-1)%3)
         self.y = tf.concat((self.y[1:],[ylast_desired]),0)
@@ -68,11 +77,11 @@ class Interface(Frame):
             xr = self.x
         else:
             xr = tf.reshape(self.x,(self.x.shape[0],self.x.shape[1]*self.x.shape[2]))
-        self.y_pred = rpcm.model(xr)
+        self.y_pred = self.model(xr)
         
         self.display(ylast,tf.argmax(self.y_pred[-1]))
         
-        current_loss = rpcm.train(rpcm.model, xr, self.y, self.learning_rate)
+        current_loss = rpcm.train(self.model, xr, self.y, self.learning_rate)
         
         xlast = tf.concat((self.x[-1,1:],[tf.concat((self.y_pred[-1],self.y[-1]),0)]),0)
         self.x = tf.concat((self.x[1:],[xlast]),0)
