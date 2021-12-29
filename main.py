@@ -2,9 +2,9 @@ import tensorflow as tf
 from tensorflow.keras import layers
 
 moves = ['p','c','f']
-learning_rate = .01
-timestep = 16
-batchsize = 10
+learning_rate = .001
+timestep = 32
+batchsize = 32
 # Instantiate an optimizer.
 optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
 def loss(y_truth,y_pred):
@@ -17,11 +17,6 @@ def train(model, x, y_truth, learning_rate):
         current_loss = loss(y_truth,model(x))
     # Use GradientTape to calculate the gradients with respect to W and b
     dweights = t.gradient(current_loss, model.trainable_weights)
-    '''
-    # Subtract the gradient scaled by the learning rate
-    for dw,w in zip(dweights,model.trainable_weights):
-        w.assign_sub(learning_rate * dw)
-    '''
     # Update the weights of the model.
     optimizer.apply_gradients(zip(dweights, model.trainable_weights))
     return current_loss
@@ -38,7 +33,13 @@ model.add(layers.Dense(3,activation = 'softmax'))
 
 model.summary()    
 
-
+def auto_move(method,ylast=None,y_pred=None):
+    if method=='constant':
+        return 0
+    if method=='cycle':
+        return (ylast+1)%3
+    if method=='kill_last':
+        return tf.cast((tf.argmax(y_pred[-1])-1)%3,tf.int32)
 
 auto = True
 x = tf.zeros((batchsize,timestep,6))
@@ -47,17 +48,16 @@ y_pred=tf.zeros((batchsize,3))
 ylast = 0
 number_of_moves = 10000
 accuracy = 0
-pause_size = 50
+pause_size = 100
 for move in range(number_of_moves):
-    if not auto:
+    if auto:
+        ylast = auto_move(method='kill_last',ylast=ylast,y_pred=y_pred)
+    else:
         ylast = input('Chi-Fou-Mi!')
         ylast = tf.cast(tf.where(tf.equal(moves,ylast))[0,0],tf.int32)
-    else:
-        #ylast+=1
-        #ylast = ylast%3
-        ylast = (int(tf.math.round(y_pred[-1,0]))-1)%3
-    ylast = int2vec((ylast-1)%3)
-    y = tf.concat((y[1:],[ylast]),0)
+        
+    ylast_desired = int2vec((ylast-1)%3)
+    y = tf.concat((y[1:],[ylast_desired]),0)
     y_pred = model(x)
 
     accuracy += tf.cast(tf.argmax(y[-1])==tf.argmax(y_pred[-1]),tf.float32)
@@ -69,7 +69,7 @@ for move in range(number_of_moves):
     if move%pause_size==0:
         print(int(100*accuracy/pause_size),'% of computer wins')
     if move%pause_size==0 or not auto:
-        print('User ' ,moves[(tf.argmax(y[-1])+1)%3])
+        print('User ' ,moves[ylast])
         print('Computer: ',moves[tf.argmax(y_pred[-1])])
         
         print('ypred' ,y_pred[-1])
