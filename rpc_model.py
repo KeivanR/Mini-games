@@ -1,10 +1,11 @@
 import tensorflow as tf
 from tensorflow.keras import layers
+import random
 
 moves = ['p','c','f']
-learning_rate = .01
+learning_rate = .1
 timestep = 16
-batchsize = 16
+batchsize = 4
 recurrent = True
 # Instantiate an optimizer.
 optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
@@ -39,6 +40,8 @@ model.summary()
 def auto_move(method,ylast=None,y_pred=None):
     if method=='constant':
         return 0
+    if method=='random':
+        return random.choice((0,1,2))
     if method=='cycle':
         return (ylast+1)%3
     if method=='kill_last':
@@ -64,7 +67,7 @@ pause_size = 100
 if __name__ == '__main__':
     for move in range(number_of_moves):
         if auto:
-            ylast = auto_move(method='kill_last',ylast=ylast,y_pred=y_pred)
+            ylast = auto_move(method='random',ylast=ylast,y_pred=y_pred)
         else:
             ylast = input('Chi-Fou-Mi!')
             ylast = tf.cast(tf.where(tf.equal(moves,ylast))[0,0],tf.int32)
