@@ -3,17 +3,17 @@ from tensorflow.keras import layers
 import random
 
 moves = ['p','c','f']
-learning_rate = .1
+learning_rate = .01
 timestep = 16
-batchsize = 4
+batchsize = 8
 recurrent = True
 # Instantiate an optimizer.
 optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
 def loss(y_truth,y_pred):
     return tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y_pred,y_truth))#(y_pred-y_truth)**2
 # Given a callable model, inputs, outputs, and a learning rate...
+#@tf.function
 def train(model, x, y_truth, learning_rate):
-
     with tf.GradientTape() as t:
     # Trainable variables are automatically tracked by GradientTape
         current_loss = loss(y_truth,model(x))
@@ -28,7 +28,7 @@ def int2vec(x):
 ####CREATE MODEL###
 model = tf.keras.Sequential()
 if recurrent:
-    model.add(tf.keras.Input(shape=(timestep,6,)))
+    model.add(tf.keras.Input(shape=(None,6)))
     model.add(layers.GRU(16))
 else:
     model.add(tf.keras.Input(shape=(timestep*6,)))
@@ -67,7 +67,7 @@ pause_size = 100
 if __name__ == '__main__':
     for move in range(number_of_moves):
         if auto:
-            ylast = auto_move(method='random',ylast=ylast,y_pred=y_pred)
+            ylast = auto_move(method='kill_last',ylast=ylast,y_pred=y_pred)
         else:
             ylast = input('Chi-Fou-Mi!')
             ylast = tf.cast(tf.where(tf.equal(moves,ylast))[0,0],tf.int32)
